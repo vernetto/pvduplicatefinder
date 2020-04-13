@@ -15,5 +15,6 @@ public class FileInfo {
     FileTime time;
     long size;
     String extension;
+    String sha2;
 
 }

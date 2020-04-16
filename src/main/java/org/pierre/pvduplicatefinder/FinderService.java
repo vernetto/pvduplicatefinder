@@ -17,9 +17,12 @@ public class FinderService {
     @Autowired
     FilesCrawler filesCrawler;
 
-    public List<DuplicateCollection> findDuplicates(String rootLocation) throws IOException {
+    public List<DuplicateCollection> findDuplicates(String... rootLocations) throws IOException {
         List<DuplicateCollection> result = new ArrayList<>();
-        List<FileInfo> allFiles = filesCrawler.findAllFileInfo(rootLocation);
+        List<FileInfo> allFiles = new ArrayList<>();
+        for (String rootLocation : rootLocations)  {
+            allFiles.addAll(filesCrawler.findAllFileInfo(rootLocation));
+        }
         Collections.sort(allFiles, Comparator.comparing(FileInfo::getSize));
         allFiles.forEach(System.out::println);
         Map<Long, List<FileInfo>> allFilesGroupedBySize = allFiles.stream().collect(Collectors.groupingBy(FileInfo::getSize));
@@ -36,6 +39,13 @@ public class FinderService {
                         fileInfo.sha2 = "ERROR";
                     }
                 });
+                Map<String, List<FileInfo>> mapWithSameSha2 = fileInfos.stream().collect(Collectors.groupingBy(FileInfo::getSha2));
+                mapWithSameSha2.forEach((s, fileInfos1) -> {
+                    if (fileInfos.size() >= 2) {
+                        System.out.println("DUPLICATE " + fileInfos1);
+                    }
+                });
+
             }
         });
 

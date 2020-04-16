@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -24,26 +25,26 @@ public class FilesCrawler {
 
     List<FileInfo> findAllFileInfo(Path rootFolder) throws IOException {
         List<FileInfo> fileInfos = new ArrayList<>();
-        try (Stream<Path> walk = Files.walk(rootFolder)) {
-            walk.filter(Files::isDirectory).filter(Predicate.not(rootFolder::equals)).forEach(path -> {
-                try {
-                    List<FileInfo> result = findAllFileInfo(path);
-                } catch (IOException e) {
-                    log.error("error", e);
-                }
-            });
+        if (rootFolder == null || rootFolder.toFile() == null || rootFolder.toFile().listFiles() == null) {
+            return fileInfos;
         }
-        try (Stream<Path> walk = Files.walk(rootFolder)) {
-            walk.filter(Files::isRegularFile).forEach(path -> {
+        for (File file : rootFolder.toFile().listFiles()) {
+            Path thisPath = file.toPath();
+            if (file.isDirectory() && ! (file.getPath().equals(rootFolder.toFile().getPath()))) {
+                findAllFileInfo(thisPath);
+            }
+            else {
                 try {
-                    FileChannel fileChannel = FileChannel.open(path);
-                    FileInfo fileInfo = FileInfo.builder().path(path).size(fileChannel.size()).time(Files.getLastModifiedTime(path)).build();
+                    FileChannel fileChannel = FileChannel.open(thisPath);
+                    FileInfo fileInfo = FileInfo.builder().path(thisPath).size(fileChannel.size()).time(Files.getLastModifiedTime(thisPath)).build();
                     fileInfos.add(fileInfo);
                 } catch (IOException e) {
                     log.error("error", e);
                 }
-            });
+
+            }
         }
+
         return fileInfos;
     }
 
